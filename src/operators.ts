@@ -1,4 +1,4 @@
-import { Observable, from, zip, concat, range, of, throwError, pipe } from "rxjs";
+import { Observable, from, zip, concat, range, of, throwError, pipe, OperatorFunction, MonoTypeOperatorFunction } from "rxjs";
 import { repeat, map, filter, take, count, distinct, last, catchError, tap } from 'rxjs/operators';
 import { parse } from 'mathjs';
 
@@ -6,24 +6,23 @@ function getRandomBoolean(): boolean {
   return Math.random() >= 0.5;
 }
 
-const operandsAndOperators: Observable<string | number> = concat(
-  range(0, 9),
-  from(['+', '-', '*', '/'])
-);
-
-const deoxyribonucleotides: Observable<string> = from([
+export const deoxyribonucleotides: Observable<string> = from([
   '0000', '0001', '0010', '0011', '0100', '0101', '0110',
   '0111', '1000', '1001', '1010', '1011', '1100', '1110'
 ]);
 
+export const operandsAndOperators: Observable<string | number> = concat(
+  from([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+  from(['+', '-', '*', '/'])
+);
+
 /** As the name says, create dictionary out of operandsAndOperators + deoxyribonucleotides
  * 
- * @param operandsAndOperators 
- * @param deoxyribonucleotides 
+ * @returns Observable<{nucleotide: string, decoded: string | number}>
  */
 export function createNucleotideDictionary(
-  operandsAndOperators: Observable<string | number>,
-  deoxyribonucleotides: Observable<string>) {
+  deoxyribonucleotides: Observable<string>,
+  operandsAndOperators: Observable<string | number>) {
   return zip(
     deoxyribonucleotides.pipe(distinct()),
     operandsAndOperators.pipe(distinct())
@@ -52,25 +51,18 @@ export function generateRandomDNA (n: number) {
 }
 
 /** Decode a nucleotide by searching the nucleotideDictionary for matches.
- * 
+ *
  * @param dictionary  The tuples of nucleotides and values we are searching in.
  * @param nucleotide  The nucleotide we are searching for e.g.: '1110'.
  * @returns           A decoded nucleotide e.g.: '/'.
  */
-export function decodeNucleotide(
-  dictionary: Observable<{nucleotide: string, decoded: string | number}>, nucleotide: string
-  ) {
-  const decodedNucleotide = dictionary.pipe(
-    filter(x => x.nucleotide === nucleotide),
-    map(x => x.decoded)
+export function decode(nucleotide: string) {
+  return pipe(
+    filter((x: any) => x.nucleotide === nucleotide),
+    map(x => x.decoded),
+    last(),
+    catchError(err => throwError('decode operator::No match found'))
   );
-  let counter = 0;
-  const subscriber = decodedNucleotide.pipe(count()).subscribe(x => counter = x)
-  if (counter > 0) {
-    return decodedNucleotide;
-  } else {
-    throw new Error('Could not decode');
-  }
 }
 
 /** Checks with the help of mathjs parse if the decodedDNA is a valid expression.
