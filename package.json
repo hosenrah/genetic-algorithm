@@ -12,6 +12,7 @@
     "coverage": "jest --coverage"
   },
   "dependencies": {
+    "mathjs": "^6.5.0",
     "rxjs": "^6.5.4"
   },
   "devDependencies": {
