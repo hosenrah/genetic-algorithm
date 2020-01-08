@@ -1,4 +1,4 @@
-import { Observable, from, zip, concat, range, of, throwError } from "rxjs";
+import { Observable, from, zip, concat, range, of, throwError, pipe } from "rxjs";
 import { repeat, map, filter, take, count, distinct, last, catchError, tap } from 'rxjs/operators';
 import { parse } from 'mathjs';
 
@@ -86,6 +86,6 @@ export function validateDNA(decodedDNA: (string | number)[]): Observable<boolean
     map(() => a),
     filter(formula => parse(formula)),
     map(x => true),
-    catchError(err => of(new Error('No valid DNA')))
+    catchError(err => throwError('No valid DNA'))
   );
 };

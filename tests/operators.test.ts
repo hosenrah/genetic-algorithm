@@ -70,9 +70,10 @@ describe('Test DNA validator', () => {
   });
 
   it('should return an error if DNA is invalid', done => {
-    validateDNA(invalidDecodedDNA).subscribe((result) => {
-      expect(result).toStrictEqual(new Error('No valid DNA'));
-      done();
+    validateDNA(invalidDecodedDNA).subscribe({
+      next(x) { console.log('got value ' + x); },
+      error(err) { expect(err).toBe('No valid DNA'); done(); },
+      complete() { console.log('done'); }
     });
   }, 1500); 
 });
