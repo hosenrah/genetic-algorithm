@@ -1,68 +1,40 @@
-import { generateRandomDNA, validateDNA, decode, createNucleotideDictionary, deoxyribonucleotides, operandsAndOperators } from "../src/operators";
-import { from, range, Observable, concat, of } from "rxjs";
-import { count, filter, map } from 'rxjs/operators';
+import { DNA, Dictionary } from '../src/helpers';
+import { generateRandomDNA, decodeNucleotide, validateDNA } from '../src/operators';
 
-const exampleDictionary = createNucleotideDictionary(deoxyribonucleotides, operandsAndOperators);
-const validNucleotide = '1100';
-const validNucleotideDecoded = '*';
-const invalidNucleotide = '1111';
-const validDecodedDNA = [1, '+', 3, '*', 5];
-const invalidDecodedDNA = [1, '+', '*', 2];
-
-describe('Test random DNA generator', () => {
-  it('should return a random DNA observable with 7 nucleotides', () => {
-    const nucleotides = 7;
-    const dna = generateRandomDNA(nucleotides);
-    dna.pipe(count()).subscribe(count => {
-      expect(count).toBe(nucleotides);
-    });
-  });
-
-  it('should return an error on nucleotide amounts = 0', () => {
-    const nucleotides = 0;
-    function generate() {
-      generateRandomDNA(nucleotides);
-    };
-    expect(generate).toThrowError('generateRandomDNA::generateRandomDNA only accepts numbers > 0');
-  });
-
-  it('should return an error on nucleotide amounts < 0', () => {
-    const nucleotides = -3;
-    function generate() {
-      generateRandomDNA(nucleotides);
-    };
-    expect(generate).toThrowError('generateRandomDNA::generateRandomDNA only accepts numbers > 0');
+describe('Tets dna generator', () => {
+  it('Should generate dna', () => {
+    const n = 7;
+    const dna = generateRandomDNA(n);
+    expect(dna.length).toBe(n);
   });
 });
 
-describe('Test decode operator', () => {
-  it('should be able to decode a nucleotide which is part of the dictionary', () => {
-    exampleDictionary.pipe(
-      decode(validNucleotide)
-    ).subscribe({
-      next(x) { expect(x).toBe(validNucleotideDecoded); }
-    });
-  });
-
-  it('should throw an error if it can\'t find the nucleotide in the dictionary', () => {
-    exampleDictionary.pipe(
-      decode(invalidNucleotide)
-    ).subscribe({
-      error(err) { expect(err).toBe('decode operator::No match found'); }
-    });
+describe('Test decodeNucleotide', () => {
+  it('Should decode a nucleotide using the given dictionary', () => {
+    const dictionary: Dictionary = {
+      '1001': 9
+    };
+    const nucleotide = '1001';
+    const decodedNucleotide = decodeNucleotide(nucleotide, dictionary);
+    expect(decodedNucleotide).toStrictEqual(dictionary['1001']);
   });
 });
 
-describe('Test DNA validator', () => {
-  it('should return true if DNA is valid', () => {
-    validateDNA(validDecodedDNA).subscribe((result) => {
-      expect(result).toStrictEqual(true);
-    });
+describe('Test validateDNA', () => {
+  it('Should return true when given a valid dna', () => {
+    const dna: DNA = [
+      { nucleotide: '0001', value: '1' },
+      { nucleotide: '1010', value: '+' },
+      { nucleotide: '0010', value: '2' },
+    ];
+    expect(validateDNA(dna)).toBe(true);
   });
-
-  it('should return an error if DNA is invalid', done => {
-    validateDNA(invalidDecodedDNA).subscribe({
-      error(err) { expect(err).toBe('No valid DNA'); done(); }
-    });
-  }, 1500); 
+  it('Should return false when given invalid dna', () => {
+    const invalidDna: DNA = [
+      { nucleotide: '0001', value: '*' },
+      { nucleotide: '1010', value: '+' },
+      { nucleotide: '0010', value: '2' },
+    ];
+    expect(validateDNA(invalidDna)).toBe(false);
+  });
 });
