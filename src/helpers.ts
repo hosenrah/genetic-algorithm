@@ -5,6 +5,7 @@ export interface DNA {
   };
   length: number;
   map: Function;
+  slice: Function;
 }
   
 export interface Dictionary {
