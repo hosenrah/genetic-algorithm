@@ -1,29 +1,26 @@
-import { range, of, from } from 'rxjs';
-import { map, concatAll, tap, toArray } from 'rxjs/operators';
-import { generateRandomDNA, decode, validateDNA } from "./operators";
+import { range, } from 'rxjs';
+import { map, filter, toArray } from 'rxjs/operators';
+import { generateRandomDNA, decodeNucleotide, validateDNA, createOrganism, Organism } from "./operators";
+import { DNA } from './helpers';
+import { evaluate } from 'mathjs';
+
+interface Population {
+  organisms: Organism[];
+};
 
 console.log('Welcome to my genetic algorithm');
 
-// from(["0001", "0110", "0111", "1011", "0000", "0001", "0101"]).pipe(
-//   decode()
-// ).subscribe(x => console.log(x))
+let population = {} as Population;
 
-// generateRandomDNA(7).pipe(
-//   decode()
-// ).subscribe(x => console.log(x));
+range(0, 50).pipe(
+  map(x => createOrganism(generateRandomDNA(20))),
+  filter(x => x.valid === true),
+  map(x => {
+    x.value = evaluate(x.dna.map(x => x.value).join(''));
+    x.value = Math.round(x.value);
+    return x;
+  }),
+  toArray()
+  ).subscribe(x => population.organisms = x);
 
-range(5).pipe(
-  map(organism => generateRandomDNA(12).pipe(decode())),
-  concatAll(),
-).subscribe(organism => {
-  validateDNA(organism).subscribe(valid => {
-    if (valid) {
-      console.log(`%c current organism: ${organism}`,
-                  'color: lightgreen')
-    } else {
-      console.log(`%c current organism: ${organism}`,
-                  'color: red')
-    }
-    
-  })
-});
+console.log(population);
