@@ -1,10 +1,13 @@
 import { parse } from 'mathjs';
-import { DNA, Dictionary, getRandomIntArrayInRange, zipToDictionary } from './helpers';
+import { DNA, Dictionary, getRandomIntArrayInRange, zipToDictionary, round, getRandomNumber } from './helpers';
+import { evaluate } from 'mathjs';
+import { Population } from '.';
 
 export interface Organism {
   valid: boolean;
   dna: DNA;
   value: number;
+  fitness: number;
 }
 
 export const nucleotides: Array<string> = [
@@ -52,21 +55,49 @@ export const validateDNA = (dna: DNA): boolean => {
   }
 };
 
-export const createOrganism = (dna: DNA): Organism => {
-  return {
-    valid: validateDNA(dna),
-    dna,
-    value: 0
-  }
-};
-
 /** Recombine father and mother dna and return new dna
  * 
  * @param father 
  * @param mother 
  */
-export const recombine = (fatherDNA: DNA, motherDNA: DNA): DNA => {
-  const slicingPoint = Math.ceil(fatherDNA.length / 2);
-  const newDNA = fatherDNA.slice(0, slicingPoint).concat(motherDNA.slice(slicingPoint, motherDNA.length));
-  return newDNA;
+export const recombine = (fatherDNA: DNA, motherDNA: DNA): [DNA, DNA] => {
+  const slicingPoint = getRandomNumber(fatherDNA.length - 1);
+  const newRightDNA = motherDNA.slice(0, slicingPoint).concat(fatherDNA.slice(slicingPoint, fatherDNA.length));
+  const newLeftDNA = fatherDNA.slice(0, slicingPoint).concat(motherDNA.slice(slicingPoint, motherDNA.length));
+  return [newLeftDNA, newRightDNA];
+};
+
+export const calculateFitness = (goal: number, current: number) => {
+  
+  if (goal != current) {
+    let fitness = 1.001 / Math.abs(goal - current);
+    fitness = Math.round(fitness * 1e4) / 1e4;
+    return fitness;
+  } else {
+    return 1;
+  }
+};
+
+export const createOrganism = (dna: DNA): Organism => {
+  const organism = {
+    valid: validateDNA(dna),
+    dna,
+    value: 0,
+    fitness: 0
+  };
+  if (organism.valid) {
+    organism.value = evaluate(organism.dna.map(x => x.value).join(''));
+    organism.fitness = calculateFitness(42, organism.value);
+  }
+
+  return organism;
+};
+
+export const createPopulation = (organisms: Organism[]): Population => {
+  let newPopulation = {} as Population;
+  newPopulation.organisms = organisms;
+  let averageFitness = organisms.reduce((acc, cur) => acc + cur.fitness, 0);
+  averageFitness = Math.round(averageFitness / organisms.length * 1e4) / 1e4
+  newPopulation.averageFitness = averageFitness;
+  return newPopulation;
 };

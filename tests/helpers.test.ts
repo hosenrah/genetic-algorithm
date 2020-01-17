@@ -1,4 +1,4 @@
-import { Dictionary, getRandomIntArrayInRange, zipToDictionary } from '../src/helpers';
+import { Dictionary, getRandomIntArrayInRange, zipToDictionary, round } from '../src/helpers';
 
 describe('Test getRandomNumbers', () => {
   it('Should generate an array n random integers in the specified range', () => {
@@ -19,5 +19,12 @@ describe('Test zipToDictionary', () => {
     };
     const zip = zipToDictionary(properties, values);
     expect(zip).toStrictEqual(expectedResult);
+  });
+});
+
+describe('Test round function', () => {
+  it('Should round correctly', () => {
+    const roundedNumber = round(1.005, 2);
+    expect(roundedNumber).toBe(1.01);
   });
 });

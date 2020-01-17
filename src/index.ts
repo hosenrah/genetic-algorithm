@@ -1,26 +1,57 @@
-import { range, } from 'rxjs';
-import { map, filter, toArray } from 'rxjs/operators';
-import { generateRandomDNA, decodeNucleotide, validateDNA, createOrganism, Organism } from "./operators";
-import { DNA } from './helpers';
-import { evaluate } from 'mathjs';
+import { range, from, Observable, } from 'rxjs';
+import { map, filter, toArray, bufferCount, pairwise, concatAll } from 'rxjs/operators';
+import { generateRandomDNA, decodeNucleotide, validateDNA, createOrganism, Organism, calculateFitness, recombine, createPopulation } from "./operators";
+import { DNA, round, shuffle, orderBy } from './helpers';
 
-interface Population {
+export interface Population {
+  gen: number;
+  averageFitness: number;
   organisms: Organism[];
+  [Symbol.iterator];
 };
 
 console.log('Welcome to my genetic algorithm');
 
-let population = {} as Population;
+let startPopulation = {} as Population;
+const startPopulationSize = 10;
+const startDNAComplexity = 5;
+const lifecylcle = 10;
 
-range(0, 50).pipe(
-  map(x => createOrganism(generateRandomDNA(20))),
+range(0, startPopulationSize).pipe(
+  map(x => createOrganism(generateRandomDNA(startDNAComplexity))),
   filter(x => x.valid === true),
-  map(x => {
-    x.value = evaluate(x.dna.map(x => x.value).join(''));
-    x.value = Math.round(x.value);
-    return x;
-  }),
   toArray()
-  ).subscribe(x => population.organisms = x);
+  ).subscribe(x => {
+    startPopulation = createPopulation(x);
+    startPopulation.gen = 0;
+  });
 
-console.log(population);
+console.log(startPopulation);
+
+const liveForOneGeneration = (cur: Population) => {
+  let newGeneration = {} as Population;
+  cur.organisms = shuffle(cur.organisms);
+  const pairedOrganisms: Observable<[Organism, Organism]> = from(cur.organisms).pipe(pairwise());
+  pairedOrganisms.pipe(
+    map(pair => {
+      const newOrganisms: [DNA, DNA] = recombine(pair[0].dna, pair[1].dna);
+      return [createOrganism(newOrganisms[0]), createOrganism(newOrganisms[1])];
+    }),
+    concatAll(),
+    filter(x => x.fitness >= 0.003),
+    toArray()
+  ).subscribe(x => {
+    newGeneration = createPopulation(x);
+    newGeneration.gen = cur.gen + 1;
+  });
+  return newGeneration;
+};
+
+let currentPopulation = startPopulation;
+
+for (let index = 0; index < lifecylcle; index++) {
+  currentPopulation = liveForOneGeneration(currentPopulation);
+  currentPopulation.organisms = orderBy(currentPopulation.organisms, ['value'], ['desc']);
+  console.log(currentPopulation);
+}
+
